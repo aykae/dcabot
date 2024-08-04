@@ -61,7 +61,8 @@ while True:
         resp = kraken_request('/0/private/Balance', {
             "nonce": str(int(1000*time.time()))
         }, api_key, api_sec)
-    except:
+    except Exception as e:
+        print(repr(e))
         time.sleep(THIRTY_SECONDS)
         continue
 
@@ -81,7 +82,8 @@ while True:
                 "volume": volume,
                 "pair": "XBTUSD",
             }, api_key, api_sec)
-        except:
+        except Exception as e:
+            print(repr(e))
             time.sleep(THIRTY_SECONDS)
             continue
 
