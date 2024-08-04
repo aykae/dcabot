@@ -33,39 +33,58 @@ def kraken_request(uri_path, data, api_key, api_sec):
 ###############
 ###############
 
-MIN_BTC_VOLUME = 0.00011
-ONE_HOUR = 60*60
+MONTHLY_TARGET_NOTIONAL = 1000
+MIN_BTC_VOLUME = 0.0001
 THIRTY_SECONDS = 30
+ONE_HOUR = 60*60
 
-next_time = time.time() + ONE_HOUR
+interval = THIRTY_SECONDS
+insufficientBalance = True
+
+next_time = time.time() + interval
 
 while True:
 
     if time.time() < next_time:
         continue
 
+    if insufficientBalance:
+        time.sleep(THIRTY_SECONDS)
+
     # Construct the request and print the result
     ticker = requests.get('https://api.kraken.com/0/public/Ticker?pair=XBTUSD')
     best_ask = float(ticker.json().get('result').get('XXBTZUSD').get('a')[0])
     volume = '{:.8f}'.format(MIN_BTC_VOLUME)
+    notional = best_ask * MIN_BTC_VOLUME
 
-    resp = kraken_request('/0/private/Balance', {
-        "nonce": str(int(1000*time.time()))
-    }, api_key, api_sec)
+    try:
+        resp = kraken_request('/0/private/Balance', {
+            "nonce": str(int(1000*time.time()))
+        }, api_key, api_sec)
+    except:
+        time.sleep(THIRTY_SECONDS)
+        continue
 
     usd_balance = float(resp.json().get('result').get('ZUSD'))
 
-    if usd_balance < (best_ask * MIN_BTC_VOLUME):
-        continue
+    if usd_balance < notional:
+        insufficientBalance = True
     else:
-        ## Execute Trade
-        resp = kraken_request('/0/private/AddOrder', {
-            "nonce": str(int(1000*time.time())),
-            "ordertype": "market",
-            "type": "buy",
-            "volume": volume,
-            "pair": "XBTUSD",
-        }, api_key, api_sec)
+        insufficientBalance = False
 
-        ## Reset interval timer
-        next_time = time.time() + ONE_HOUR
+        ## Execute Trade
+        try: 
+            resp = kraken_request('/0/private/AddOrder', {
+                "nonce": str(int(1000*time.time())),
+                "ordertype": "market",
+                "type": "buy",
+                "volume": volume,
+                "pair": "XBTUSD",
+            }, api_key, api_sec)
+        except:
+            time.sleep(THIRTY_SECONDS)
+            continue
+
+        ## Recompute interval and reset
+        interval = MONTHLY_TARGET_NOTIONAL * 12 / 365 / notional * 60 * 60
+        next_time = time.time() + interval
