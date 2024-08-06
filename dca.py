@@ -88,5 +88,5 @@ while True:
             continue
 
         ## Recompute interval and reset
-        interval = MONTHLY_TARGET_NOTIONAL * 12 / 365 / notional * 60 * 60
+        interval = 24 / (MONTHLY_TARGET_NOTIONAL * 12 / 365 / notional) * 60 * 60
         next_time = time.time() + interval
