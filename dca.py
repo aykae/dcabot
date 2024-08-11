@@ -5,6 +5,7 @@ import base64
 import os
 import time
 import requests
+import csv
 
 def get_kraken_signature(urlpath, data, secret):
 
@@ -82,6 +83,15 @@ while True:
                 "volume": volume,
                 "pair": "XBTUSD",
             }, api_key, api_sec)
+
+            ## Log Trade
+            with open("trades.csv", "a") as f:
+                tradewriter = csv.writer(f)
+                curr_time = time.strftime("%a, %d %b %Y %H:%M:%S +0000", time.localtime())
+                curr_interval = interval / 60 / 60
+                trade = [curr_time, volume, best_ask, notional, curr_interval]
+                tradewriter.writerow(trade)
+
         except Exception as e:
             print(repr(e))
             time.sleep(THIRTY_SECONDS)
